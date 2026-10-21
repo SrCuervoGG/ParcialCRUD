@@ -8,7 +8,6 @@ namespace TiendaDB
 {
     public partial class Form1 : Form
     {
-        private TiendaContext _context = new TiendaContext();
         private int _productoIdSeleccionado = 0;
 
         public Form1()
@@ -24,37 +23,43 @@ namespace TiendaDB
 
         private void CargarCategorias()
         {
-            if (!_context.Categorias.Any())
+            using (var context = new TiendaContext())
             {
-                _context.Categorias.AddRange(
-                    new Categoria { Nombre = "Electrónica" },
-                    new Categoria { Nombre = "Ropa" }
-                );
-                _context.SaveChanges();
-            }
+                if (!context.Categorias.Any())
+                {
+                    context.Categorias.AddRange(
+                        new Categoria { Nombre = "Electrónica" },
+                        new Categoria { Nombre = "Ropa" }
+                    );
+                    context.SaveChanges();
+                }
 
-            cmbCategorias.DataSource = _context.Categorias.ToList();
-            cmbCategorias.DisplayMember = "Nombre";
-            cmbCategorias.ValueMember = "Id";
+                cmbCategorias.DataSource = context.Categorias.ToList();
+                cmbCategorias.DisplayMember = "Nombre";
+                cmbCategorias.ValueMember = "Id";
+            }
         }
 
         private void CargarProductos()
         {
-            var productos = _context.Productos
-                .Include(p => p.Categorias)
-                .Select(p => new
-                {
-                    p.Id,
-                    Producto = p.Nombre,
-                    p.Precio,
-                    Categoria = p.Categorias.Nombre,
-                    p.CategoriaId
-                }).ToList();
+            using (var context = new TiendaContext())
+            {
+                var productos = context.Productos
+                    .Include(p => p.Categorias)
+                    .Select(p => new
+                    {
+                        p.Id,
+                        Producto = p.Nombre,
+                        p.Precio,
+                        Categoria = p.Categorias.Nombre,
+                        p.CategoriaId
+                    }).ToList();
 
-            dgbProductos.DataSource = productos;
+                dgbProductos.DataSource = productos;
 
-            if (dgbProductos.Columns["CategoriaId"] != null)
-                dgbProductos.Columns["CategoriaId"].Visible = false;
+                if (dgbProductos.Columns["CategoriaId"] != null)
+                    dgbProductos.Columns["CategoriaId"].Visible = false;
+            }
         }
 
         private void LimpiarFormulario()
@@ -67,54 +72,107 @@ namespace TiendaDB
             btnGuardar.Text = "Guardar";
         }
 
-        private void btnGuardar_Click(object sender, EventArgs e)
+        private int ObtenerACrearCategoriaId(TiendaContext context, string nombreCategoria)
         {
-            if (string.IsNullOrEmpty(txtNombe.Text) ||
-                !decimal.TryParse(txtPrecio.Text, out decimal precio))
-            {
-                MessageBox.Show("Por favor, rellene los campos correctamente.");
-                return;
-            }
+            var categoriaDb = context.Categorias.FirstOrDefault(c => c.Nombre.ToLower() == nombreCategoria.ToLower());
+            if (categoriaDb != null) return categoriaDb.Id;
 
-            int categoriaId = 0;
-            if (cmbCategorias.SelectedValue != null)
-            {
-                categoriaId = Convert.ToInt32(cmbCategorias.SelectedValue);
-            }
+            var nuevaCategoria = new Categoria { Nombre = nombreCategoria };
+            context.Categorias.Add(nuevaCategoria);
+            context.SaveChanges();
+            return nuevaCategoria.Id;
+        }
 
-            if (_productoIdSeleccionado == 0)
+        private void btnGuardar_Click_1(object sender, EventArgs e)
+        {
+            try
             {
-                var nuevoProducto = new Producto
+                if (string.IsNullOrEmpty(txtNombe.Text) || !decimal.TryParse(txtPrecio.Text, out decimal precio))
                 {
-                    Nombre = txtNombe.Text,
-                    Precio = precio,
-                    CategoriaId = categoriaId
-                };
-                _context.Productos.Add(nuevoProducto);
-            }
-            else
-            {
-                var productoExistente = _context.Productos.Find(_productoIdSeleccionado);
-                if (productoExistente != null)
-                {
-                    productoExistente.Nombre = txtNombe.Text;
-                    productoExistente.Precio = precio;
-                    productoExistente.CategoriaId = categoriaId;
+                    MessageBox.Show("Por favor, rellene los campos correctamente.");
+                    return;
                 }
+
+                string nombreCategoria = cmbCategorias.Text.Trim();
+                if (string.IsNullOrEmpty(nombreCategoria))
+                {
+                    MessageBox.Show("Por favor, seleccione o escriba una categoría válida.");
+                    return;
+                }
+
+                using (var context = new TiendaContext())
+                {
+                    int categoriaId = ObtenerACrearCategoriaId(context, nombreCategoria);
+
+                    context.Productos.Add(new Producto
+                    {
+                        Nombre = txtNombe.Text,
+                        Precio = precio,
+                        CategoriaId = categoriaId
+                    });
+                    context.SaveChanges();
+                }
+
+                CargarCategorias();
+                CargarProductos();
+                LimpiarFormulario();
+                MessageBox.Show("¡Producto guardado con éxito!");
             }
-
-            _context.SaveChanges();
-            CargarProductos();
-            LimpiarFormulario();
-            MessageBox.Show("Operación realizada con éxito.");
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al guardar: " + (ex.InnerException?.Message ?? ex.Message));
+            }
         }
 
-        private void btnEditar_Click(object sender, EventArgs e)
+        private void btnEditar_Click_1(object sender, EventArgs e)
         {
-            btnGuardar_Click(sender, e);
+            try
+            {
+                if (_productoIdSeleccionado == 0)
+                {
+                    MessageBox.Show("Seleccione un producto de la tabla para editar.");
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(txtNombe.Text) || !decimal.TryParse(txtPrecio.Text, out decimal precio))
+                {
+                    MessageBox.Show("Por favor, rellene los campos correctamente.");
+                    return;
+                }
+
+                string nombreCategoria = cmbCategorias.Text.Trim();
+                if (string.IsNullOrEmpty(nombreCategoria))
+                {
+                    MessageBox.Show("Por favor, seleccione o escriba una categoría válida.");
+                    return;
+                }
+
+                using (var context = new TiendaContext())
+                {
+                    int categoriaId = ObtenerACrearCategoriaId(context, nombreCategoria);
+
+                    var productoExistente = context.Productos.Find(_productoIdSeleccionado);
+                    if (productoExistente != null)
+                    {
+                        productoExistente.Nombre = txtNombe.Text;
+                        productoExistente.Precio = precio;
+                        productoExistente.CategoriaId = categoriaId;
+                        context.SaveChanges();
+                    }
+                }
+
+                CargarCategorias();
+                CargarProductos();
+                LimpiarFormulario();
+                MessageBox.Show("¡Producto actualizado con éxito!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al actualizar: " + (ex.InnerException?.Message ?? ex.Message));
+            }
         }
 
-        private void dgbProductos_CellClick(object sender, DataGridViewCellEventArgs e)
+        private void dgbProductos_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
             {
@@ -123,36 +181,49 @@ namespace TiendaDB
                 txtNombe.Text = row.Cells["Producto"].Value?.ToString() ?? "";
                 txtPrecio.Text = row.Cells["Precio"].Value?.ToString() ?? "";
                 cmbCategorias.SelectedValue = Convert.ToInt32(row.Cells["CategoriaId"].Value ?? 0);
-                btnGuardar.Text = "Actualizar";
             }
         }
 
-        private void btnEliminar_Click(object sender, EventArgs e)
+        private void btnEliminar_Click_1(object sender, EventArgs e)
         {
-            if (_productoIdSeleccionado == 0)
+            try
             {
-                MessageBox.Show("Seleccione un producto de la lista para eliminar.");
-                return;
-            }
-
-            var confirm = MessageBox.Show("¿Está seguro de eliminar este producto?", "Confirmar", MessageBoxButtons.YesNo);
-            if (confirm == DialogResult.Yes)
-            {
-                var producto = _context.Productos.Find(_productoIdSeleccionado);
-                if (producto != null)
+                if (_productoIdSeleccionado == 0)
                 {
-                    _context.Productos.Remove(producto);
-                    _context.SaveChanges();
+                    MessageBox.Show("Seleccione un producto de la lista para eliminar.");
+                    return;
+                }
+
+                if (MessageBox.Show("¿Está seguro de eliminar este producto?", "Confirmar", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    using (var context = new TiendaContext())
+                    {
+                        var producto = context.Productos.Find(_productoIdSeleccionado);
+                        if (producto != null)
+                        {
+                            context.Productos.Remove(producto);
+                            context.SaveChanges();
+                        }
+                    }
+
                     CargarProductos();
                     LimpiarFormulario();
-                    MessageBox.Show("Producto eliminado.");
+                    MessageBox.Show("¡Producto eliminado!");
                 }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al eliminar: " + (ex.InnerException?.Message ?? ex.Message));
             }
         }
 
-        private void btnLimpiar_Click(object sender, EventArgs e)
+        private void btnLimpiar_Click_1(object sender, EventArgs e)
         {
             LimpiarFormulario();
         }
+
+        private void txtNombe_TextChanged(object sender, EventArgs e) { }
+        private void txtPrecio_TextChanged(object sender, EventArgs e) { }
+        private void cmbCategorias_SelectedIndexChanged(object sender, EventArgs e) { }
     }
 }

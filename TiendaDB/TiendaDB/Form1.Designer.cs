@@ -49,6 +49,7 @@
             dgbProductos.Name = "dgbProductos";
             dgbProductos.Size = new Size(689, 205);
             dgbProductos.TabIndex = 0;
+            dgbProductos.CellContentClick += dgbProductos_CellContentClick;
             // 
             // txtNombe
             // 
@@ -56,6 +57,7 @@
             txtNombe.Name = "txtNombe";
             txtNombe.Size = new Size(256, 23);
             txtNombe.TabIndex = 1;
+            txtNombe.TextChanged += txtNombe_TextChanged;
             // 
             // txtPrecio
             // 
@@ -63,6 +65,7 @@
             txtPrecio.Name = "txtPrecio";
             txtPrecio.Size = new Size(256, 23);
             txtPrecio.TabIndex = 2;
+            txtPrecio.TextChanged += txtPrecio_TextChanged;
             // 
             // cmbCategorias
             // 
@@ -71,6 +74,7 @@
             cmbCategorias.Name = "cmbCategorias";
             cmbCategorias.Size = new Size(256, 23);
             cmbCategorias.TabIndex = 3;
+            cmbCategorias.SelectedIndexChanged += cmbCategorias_SelectedIndexChanged;
             // 
             // btnGuardar
             // 
@@ -81,6 +85,7 @@
             btnGuardar.TabIndex = 4;
             btnGuardar.Text = "Guardar";
             btnGuardar.UseVisualStyleBackColor = true;
+            btnGuardar.Click += btnGuardar_Click_1;
             // 
             // btnEditar
             // 
@@ -91,6 +96,7 @@
             btnEditar.TabIndex = 5;
             btnEditar.Text = "Editar";
             btnEditar.UseVisualStyleBackColor = true;
+            btnEditar.Click += btnEditar_Click_1;
             // 
             // btnEliminar
             // 
@@ -101,6 +107,7 @@
             btnEliminar.TabIndex = 6;
             btnEliminar.Text = "Eliminar";
             btnEliminar.UseVisualStyleBackColor = true;
+            btnEliminar.Click += btnEliminar_Click_1;
             // 
             // btnLimpiar
             // 
@@ -111,6 +118,7 @@
             btnLimpiar.TabIndex = 7;
             btnLimpiar.Text = "Limpiar";
             btnLimpiar.UseVisualStyleBackColor = true;
+            btnLimpiar.Click += btnLimpiar_Click_1;
             // 
             // lblNombre
             // 
@@ -146,7 +154,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(801, 447);
             Controls.Add(lblCategorias);
             Controls.Add(lblPrecio);
             Controls.Add(lblNombre);
