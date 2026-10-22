@@ -23,7 +23,7 @@ namespace TiendaDB.Models
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;AttachDbFilename=C:\Users\emerson\source\repos\ParcialCRUD\TiendaDB\TiendaDB\TiendaDB.mdf;Database=TiendaDB;Trusted_Connection=True;TrustServerCertificate=True");
+                optionsBuilder.UseSqlServer($@"Server=(localdb)\MSSQLLocalDB;AttachDbFilename={AppDomain.CurrentDomain.BaseDirectory}TiendaDB.mdf;Database=TiendaDB;Trusted_Connection=True;TrustServerCertificate=True;");
             }
         }
 
